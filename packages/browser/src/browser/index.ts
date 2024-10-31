@@ -150,18 +150,52 @@ export function loadCDNSettings(
   writeKey: string,
   baseUrl: string
 ): Promise<CDNSettings> {
-  return fetch(`${baseUrl}/v1/projects/${writeKey}/settings`)
-    .then((res) => {
+  const url = `${baseUrl}/v1/projects/${writeKey}/settings`
+  console.log('Fetching settings from:', url)
+
+  return fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: writeKey,
+      Accept: 'application/json', // Added this
+    },
+  })
+    .then(async (res) => {
+      console.log('Response status:', res.status)
+      console.log(
+        'Response headers:',
+        Object.fromEntries(res.headers.entries())
+      )
+
+      const responseText = await res.text()
+      console.log('Raw response:', responseText)
+
       if (!res.ok) {
-        return res.text().then((errorResponseMessage) => {
-          throw new Error(errorResponseMessage)
-        })
+        throw new Error(`HTTP error! status: ${res.status} - ${responseText}`)
       }
-      return res.json()
+
+      try {
+        return JSON.parse(responseText)
+      } catch (e) {
+        console.error('Failed to parse response as JSON:', e)
+        throw new Error('Invalid JSON response from settings endpoint')
+      }
     })
     .catch((err) => {
-      console.error(err.message)
-      throw err
+      console.error('Failed to load settings:', err)
+
+      // Return default settings as fallback
+      return {
+        integrations: {
+          'Segment.io': {
+            apiHost: '8834-149-74-222-166.ngrok-free.app', // Removed https://
+            apiKey: writeKey,
+            protocol: 'https',
+            retryQueue: true,
+          },
+        },
+      } as CDNSettings
     })
 }
 
@@ -294,8 +328,7 @@ async function registerPlugins(
     basePlugins.push(
       await segmentio(
         analytics,
-        mergedSettings['Segment.io'] as SegmentioSettings,
-        cdnSettings.integrations
+        mergedSettings['Segment.io'] as SegmentioSettings
       )
     )
   }

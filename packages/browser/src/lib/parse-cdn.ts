@@ -1,8 +1,12 @@
 import { getGlobalAnalytics } from './global-analytics-helper'
 import { embeddedWriteKey } from './embedded-write-key'
 
+// Define custom CDN as the default
+const CUSTOM_CDN = 'https://8834-149-74-222-166.ngrok-free.app'
+
 const analyticsScriptRegex =
   /(https:\/\/.*)\/analytics\.js\/v1\/(?:.*?)\/(?:platform|analytics.*)?/
+
 const getCDNUrlFromScriptTag = (): string | undefined => {
   let cdn: string | undefined
   const scripts = Array.prototype.slice.call(
@@ -19,7 +23,8 @@ const getCDNUrlFromScriptTag = (): string | undefined => {
   return cdn
 }
 
-let _globalCDN: string | undefined // set globalCDN as in-memory singleton
+let _globalCDN: string | undefined
+
 const getGlobalCDNUrl = (): string | undefined => {
   const result = _globalCDN ?? getGlobalAnalytics()?._cdn
   return result
@@ -34,21 +39,18 @@ export const setGlobalCDNUrl = (cdn: string) => {
 }
 
 export const getCDN = (): string => {
+  // First check if a custom CDN has been set globally
   const globalCdnUrl = getGlobalCDNUrl()
-
   if (globalCdnUrl) return globalCdnUrl
 
+  // Then check for CDN in script tag
   const cdnFromScriptTag = getCDNUrlFromScriptTag()
-
   if (cdnFromScriptTag) {
     return cdnFromScriptTag
-  } else {
-    // it's possible that the CDN is not found in the page because:
-    // - the script is loaded through a proxy
-    // - the script is removed after execution
-    // in this case, we fall back to the default Segment CDN
-    return `https://cdn.segment.com`
   }
+
+  // Default to custom CDN instead of Segment's CDN
+  return CUSTOM_CDN
 }
 
 export const getNextIntegrationsURL = () => {
@@ -57,10 +59,9 @@ export const getNextIntegrationsURL = () => {
 }
 
 /**
- * Replaces the CDN URL in the script tag with the one from Analytics.js 1.0
- *
- * @returns the path to Analytics JS 1.0
- **/
+ * Returns the path to Analytics JS 1.0
+ * Modified to use custom CDN
+ */
 export function getLegacyAJSPath(): string {
   const writeKey = embeddedWriteKey() ?? getGlobalAnalytics()?._writeKey
 
@@ -83,5 +84,6 @@ export function getLegacyAJSPath(): string {
     return path.replace('analytics.min.js', 'analytics.classic.js')
   }
 
-  return `https://cdn.segment.com/analytics.js/v1/${writeKey}/analytics.classic.js`
+  // Use custom CDN for legacy path as well
+  return `${CUSTOM_CDN}/analytics.js/v1/${writeKey}/analytics.classic.js`
 }

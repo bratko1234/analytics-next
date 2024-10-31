@@ -1,19 +1,27 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import { getCDN, setGlobalCDNUrl } from '../lib/parse-cdn'
+import { getGlobalAnalytics } from '../lib/global-analytics-helper'
+import { setGlobalCDNUrl } from '../lib/parse-cdn'
 import { setVersionType } from '../lib/version-type'
+
+const CUSTOM_CDN = 'https://8834-149-74-222-166.ngrok-free.app'
+
+// Add this declaration at the top of the file
+declare global {
+  interface Window {
+    AnalyticsNext: any
+  }
+}
 
 if (process.env.IS_WEBPACK_BUILD) {
   if (process.env.ASSET_PATH) {
     // @ts-ignore
     __webpack_public_path__ = process.env.ASSET_PATH
   } else {
-    const cdn = getCDN()
-    setGlobalCDNUrl(cdn)
+    // Always use custom CDN
+    setGlobalCDNUrl(CUSTOM_CDN)
 
     // @ts-ignore
-    __webpack_public_path__ = cdn
-      ? cdn + '/analytics-next/bundles/'
-      : 'https://cdn.segment.com/analytics-next/bundles/'
+    __webpack_public_path__ = `${CUSTOM_CDN}/analytics-next/bundles/`
   }
 }
 
@@ -29,6 +37,9 @@ import {
   isAnalyticsCSPError,
 } from '../lib/csp-detection'
 import { setGlobalAnalyticsKey } from '../lib/global-analytics-helper'
+
+// Import the custom plugin
+import { customSegmentio } from '../plugins/custom-segmentio'
 
 let ajsIdentifiedCSP = false
 
@@ -57,7 +68,9 @@ document.addEventListener('securitypolicyviolation', (e) => {
   }
   ajsIdentifiedCSP = true
   sendErrorMetrics(['type:csp'])
-  loadAjsClassicFallback().catch(console.error)
+
+  const fallbackUrl = `${CUSTOM_CDN}/analytics.js/v1/${embeddedWriteKey()}/analytics.classic.js`
+  loadAjsClassicFallback(fallbackUrl).catch(console.error)
 })
 
 /**
@@ -82,8 +95,39 @@ if (globalAnalyticsKey) {
   setGlobalAnalyticsKey(globalAnalyticsKey)
 }
 
+async function modifiedInstall() {
+  console.log('Starting modifiedInstall')
+  try {
+    await install()
+    console.log('install completed')
+    const analytics = getGlobalAnalytics()
+    console.log('Global analytics object:', analytics)
+    if (analytics && typeof analytics.register === 'function') {
+      console.log('Registering custom plugin')
+      await analytics.register(
+        customSegmentio({
+          writeKey: embeddedWriteKey() || '',
+          apiHost: CUSTOM_CDN,
+        })
+      )
+      console.log('Custom Segment.io plugin registered.')
+      window.analytics = analytics
+      console.log('Window analytics object updated')
+    } else {
+      console.error(
+        'Analytics object not found or register method not available'
+      )
+      console.log(
+        'Analytics object structure:',
+        JSON.stringify(analytics, null, 2)
+      )
+    }
+  } catch (error) {
+    console.error('Error in modifiedInstall:', error)
+  }
+}
+
 if (shouldPolyfill()) {
-  // load polyfills in order to get AJS to work with old browsers
   const script = document.createElement('script')
   script.setAttribute(
     'src',
@@ -99,8 +143,12 @@ if (shouldPolyfill()) {
   }
 
   script.onload = function (): void {
-    attempt(install)
+    attempt(modifiedInstall)
   }
 } else {
-  attempt(install)
+  attempt(modifiedInstall)
 }
+
+// Make analytics available globally
+export { Analytics } from '../core/analytics'
+window.AnalyticsNext = window.analytics

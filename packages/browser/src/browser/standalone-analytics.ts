@@ -6,6 +6,16 @@ import {
   setGlobalAnalytics,
 } from '../lib/global-analytics-helper'
 
+// Import your custom plugin
+import { customSegmentio } from '../plugins/custom-segmentio'
+
+// Extend the Window interface
+declare global {
+  interface Window {
+    analytics: any
+  }
+}
+
 function getWriteKey(): string | undefined {
   if (embeddedWriteKey()) {
     return embeddedWriteKey()
@@ -47,8 +57,12 @@ function getWriteKey(): string | undefined {
 }
 
 export async function install(): Promise<void> {
+  console.log('Starting install function')
   const writeKey = getWriteKey()
+  console.log('Write key:', writeKey)
   const options = getGlobalAnalytics()?._loadOptions ?? {}
+  console.log('Options:', options)
+
   if (!writeKey) {
     console.error(
       'Failed to load Write Key. Make sure to use the latest version of the Segment snippet, which can be found in your source settings.'
@@ -56,7 +70,23 @@ export async function install(): Promise<void> {
     return
   }
 
-  setGlobalAnalytics(
-    (await AnalyticsBrowser.standalone(writeKey, options)) as AnalyticsSnippet
+  console.log('Initializing AnalyticsBrowser')
+  const analytics = await AnalyticsBrowser.standalone(writeKey, options)
+  console.log('AnalyticsBrowser initialized')
+
+  console.log('Registering custom plugin')
+  await analytics.register(
+    customSegmentio({
+      writeKey: writeKey,
+      apiHost: 'https://8834-149-74-222-166.ngrok-free.app',
+    })
   )
+
+  console.log('Custom Segment.io plugin registered.')
+
+  console.log('Setting global analytics instance')
+  setGlobalAnalytics(analytics as AnalyticsSnippet)
+
+  console.log('Setting window.analytics')
+  window.analytics = analytics
 }

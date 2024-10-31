@@ -23,3 +23,8 @@ export {
   resolvePageArguments,
   resolveUserArguments,
 } from './core/arguments-resolver'
+
+export {
+  customSegmentio,
+  loadCustomSegmentio,
+} from './plugins/custom-segmentio'
