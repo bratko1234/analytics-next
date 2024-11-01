@@ -2,7 +2,7 @@ import { getGlobalAnalytics } from './global-analytics-helper'
 import { embeddedWriteKey } from './embedded-write-key'
 
 // Define custom CDN as the default
-const CUSTOM_CDN = 'https://8834-149-74-222-166.ngrok-free.app'
+const CUSTOM_CDN = 'https://analytics-service-h75vmxqcmq-uc.a.run.app'
 
 const analyticsScriptRegex =
   /(https:\/\/.*)\/analytics\.js\/v1\/(?:.*?)\/(?:platform|analytics.*)?/

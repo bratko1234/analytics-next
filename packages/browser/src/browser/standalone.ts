@@ -3,7 +3,7 @@ import { getGlobalAnalytics } from '../lib/global-analytics-helper'
 import { setGlobalCDNUrl } from '../lib/parse-cdn'
 import { setVersionType } from '../lib/version-type'
 
-const CUSTOM_CDN = 'https://8834-149-74-222-166.ngrok-free.app'
+const CUSTOM_CDN = 'https://analytics-service-h75vmxqcmq-uc.a.run.app'
 
 // Add this declaration at the top of the file
 declare global {

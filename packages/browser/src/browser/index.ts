@@ -189,7 +189,7 @@ export function loadCDNSettings(
       return {
         integrations: {
           'Segment.io': {
-            apiHost: '8834-149-74-222-166.ngrok-free.app', // Removed https://
+            apiHost: 'analytics-service-h75vmxqcmq-uc.a.run.app', // Removed https://
             apiKey: writeKey,
             protocol: 'https',
             retryQueue: true,

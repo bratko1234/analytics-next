@@ -78,7 +78,7 @@ export async function install(): Promise<void> {
   await analytics.register(
     customSegmentio({
       writeKey: writeKey,
-      apiHost: 'https://8834-149-74-222-166.ngrok-free.app',
+      apiHost: 'https://analytics-service-h75vmxqcmq-uc.a.run.app',
     })
   )
 
