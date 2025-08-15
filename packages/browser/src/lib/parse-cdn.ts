@@ -2,7 +2,7 @@ import { getGlobalAnalytics } from './global-analytics-helper'
 import { embeddedWriteKey } from './embedded-write-key'
 
 // Define custom CDN as the default
-const CUSTOM_CDN = 'https://analytics-service-h75vmxqcmq-uc.a.run.app'
+const CUSTOM_CDN = 'https://analytics-service-452833261444.us-central1.run.app'
 
 const analyticsScriptRegex =
   /(https:\/\/.*)\/analytics\.js\/v1\/(?:.*?)\/(?:platform|analytics.*)?/

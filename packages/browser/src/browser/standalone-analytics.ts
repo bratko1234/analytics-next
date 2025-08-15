@@ -9,6 +9,18 @@ import {
 // Import your custom plugin
 import { customSegmentio } from '../plugins/custom-segmentio'
 
+// Interface for install options
+interface InstallOptions {
+  integrations?: {
+    [key: string]:
+      | boolean
+      | {
+          apiHost?: string
+          writeKey?: string
+        }
+  }
+}
+
 // Extend the Window interface
 declare global {
   interface Window {
@@ -56,12 +68,23 @@ function getWriteKey(): string | undefined {
   return writeKey
 }
 
-export async function install(): Promise<void> {
+export async function install(installOptions?: InstallOptions): Promise<void> {
   console.log('Starting install function')
   const writeKey = getWriteKey()
   console.log('Write key:', writeKey)
-  const options = getGlobalAnalytics()?._loadOptions ?? {}
-  console.log('Options:', options)
+
+  // Merge provided options with existing options
+  const existingOptions = getGlobalAnalytics()?._loadOptions ?? {}
+  const options = {
+    ...existingOptions,
+    ...installOptions,
+    integrations: {
+      ...existingOptions.integrations,
+      ...installOptions?.integrations,
+    },
+  }
+
+  console.log('Merged Options:', options)
 
   if (!writeKey) {
     console.error(
@@ -74,15 +97,17 @@ export async function install(): Promise<void> {
   const analytics = await AnalyticsBrowser.standalone(writeKey, options)
   console.log('AnalyticsBrowser initialized')
 
-  console.log('Registering custom plugin')
-  await analytics.register(
-    customSegmentio({
-      writeKey: writeKey,
-      apiHost: 'https://analytics-service-h75vmxqcmq-uc.a.run.app',
-    })
-  )
-
-  console.log('Custom Segment.io plugin registered.')
+  // Only register the custom plugin if it's enabled in options
+  if (options.integrations?.['Custom Segment.io'] !== false) {
+    console.log('Registering custom plugin')
+    await analytics.register(
+      customSegmentio({
+        writeKey: writeKey,
+        apiHost: 'analytics-service-452833261444.us-central1.run.app',
+      })
+    )
+    console.log('Custom Segment.io plugin registered.')
+  }
 
   console.log('Setting global analytics instance')
   setGlobalAnalytics(analytics as AnalyticsSnippet)

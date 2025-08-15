@@ -189,7 +189,7 @@ export function loadCDNSettings(
       return {
         integrations: {
           'Segment.io': {
-            apiHost: 'analytics-service-h75vmxqcmq-uc.a.run.app', // Removed https://
+            apiHost: 'analytics-service-452833261444.us-central1.run.app', // Removed https://
             apiKey: writeKey,
             protocol: 'https',
             retryQueue: true,
