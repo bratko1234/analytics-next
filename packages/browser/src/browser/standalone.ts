@@ -3,7 +3,7 @@ import { getGlobalAnalytics } from '../lib/global-analytics-helper'
 import { setGlobalCDNUrl } from '../lib/parse-cdn'
 import { setVersionType } from '../lib/version-type'
 
-const CUSTOM_CDN = 'https://analytics-service-452833261444.us-central1.run.app'
+const CUSTOM_CDN = 'https://api.bratrax.com'
 
 // Add this declaration at the top of the file
 declare global {

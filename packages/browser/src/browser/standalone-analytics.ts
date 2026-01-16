@@ -103,7 +103,7 @@ export async function install(installOptions?: InstallOptions): Promise<void> {
     await analytics.register(
       customSegmentio({
         writeKey: writeKey,
-        apiHost: 'analytics-service-452833261444.us-central1.run.app',
+        apiHost: 'api.bratrax.com',
       })
     )
     console.log('Custom Segment.io plugin registered.')
