@@ -146,58 +146,58 @@ export interface AnalyticsBrowserSettings {
   classicIntegrations?: ClassicIntegrationSource[]
 }
 
-export function loadCDNSettings(
-  writeKey: string,
-  baseUrl: string
-): Promise<CDNSettings> {
-  const url = `${baseUrl}/v1/projects/${writeKey}/settings`
-  console.log('Fetching settings from:', url)
+// export function loadCDNSettings(
+//   writeKey: string,
+//   baseUrl: string
+// ): Promise<CDNSettings> {
+//   const url = `${baseUrl}/v1/projects/${writeKey}/settings`
+//   console.log('Fetching settings from:', url)
 
-  return fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: writeKey,
-      Accept: 'application/json', // Added this
-    },
-  })
-    .then(async (res) => {
-      console.log('Response status:', res.status)
-      console.log(
-        'Response headers:',
-        Object.fromEntries(res.headers.entries())
-      )
+//   return fetch(url, {
+//     method: 'GET',
+//     headers: {
+//       'Content-Type': 'application/json',
+//       Authorization: writeKey,
+//       Accept: 'application/json', // Added this
+//     },
+//   })
+//     .then(async (res) => {
+//       console.log('Response status:', res.status)
+//       console.log(
+//         'Response headers:',
+//         Object.fromEntries(res.headers.entries())
+//       )
 
-      const responseText = await res.text()
-      console.log('Raw response:', responseText)
+//       const responseText = await res.text()
+//       console.log('Raw response:', responseText)
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status} - ${responseText}`)
-      }
+//       if (!res.ok) {
+//         throw new Error(`HTTP error! status: ${res.status} - ${responseText}`)
+//       }
 
-      try {
-        return JSON.parse(responseText)
-      } catch (e) {
-        console.error('Failed to parse response as JSON:', e)
-        throw new Error('Invalid JSON response from settings endpoint')
-      }
-    })
-    .catch((err) => {
-      console.error('Failed to load settings:', err)
+//       try {
+//         return JSON.parse(responseText)
+//       } catch (e) {
+//         console.error('Failed to parse response as JSON:', e)
+//         throw new Error('Invalid JSON response from settings endpoint')
+//       }
+//     })
+//     .catch((err) => {
+//       console.error('Failed to load settings:', err)
 
-      // Return default settings as fallback
-      return {
-        integrations: {
-          'Segment.io': {
-            apiHost: 'api.bratrax.com', // Removed https://
-            apiKey: writeKey,
-            protocol: 'https',
-            retryQueue: true,
-          },
-        },
-      } as CDNSettings
-    })
-}
+//       // Return default settings as fallback
+//       return {
+//         integrations: {
+//           'Segment.io': {
+//             apiHost: 'api.bratrax.com', // Removed https://
+//             apiKey: writeKey,
+//             protocol: 'https',
+//             retryQueue: true,
+//           },
+//         },
+//       } as CDNSettings
+//     })
+// }
 
 function hasLegacyDestinations(settings: CDNSettings): boolean {
   return (
@@ -388,7 +388,17 @@ async function loadAnalytics(
 
   const cdnURL = settings.cdnURL ?? getCDN()
   let cdnSettings =
-    settings.cdnSettings ?? (await loadCDNSettings(settings.writeKey, cdnURL))
+    // settings.cdnSettings ?? (await loadCDNSettings(settings.writeKey, cdnURL))
+    settings.cdnSettings ?? {
+      integrations: {
+        'Segment.io': {
+          apiHost: 'api.bratrax.com',
+          apiKey: settings.writeKey,
+          protocol: 'https',
+          retryQueue: true,
+        },
+      },
+    } as CDNSettings
 
   if (options.updateCDNSettings) {
     cdnSettings = options.updateCDNSettings(cdnSettings)

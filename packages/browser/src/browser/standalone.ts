@@ -105,7 +105,6 @@ if (globalAnalyticsKey) {
 }
 
 async function modifiedInstall() {
-  console.log('Starting modifiedInstall')
   try {
     const writeKey = embeddedWriteKey() || ''
 
@@ -125,14 +124,12 @@ async function modifiedInstall() {
 
     // Install with options
     await install(initOptions)
-    console.log('install completed')
 
     const analytics = getGlobalAnalytics()
     if (!analytics) {
       throw new Error('Analytics not initialized properly')
     }
 
-    console.log('Global analytics object:', analytics)
 
     // Register the plugin only once
     if (
@@ -146,7 +143,6 @@ async function modifiedInstall() {
           apiHost: cleanHost,
         })
       )
-      console.log('Custom Segment.io plugin registered.')
     }
 
     // Set global references

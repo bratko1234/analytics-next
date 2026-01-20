@@ -4125,9 +4125,10 @@ __metadata:
   resolution: "@segment/analytics-core@workspace:packages/core"
   dependencies:
     "@lukeed/uuid": ^2.0.0
-    "@segment/analytics-generic-utils": 1.2.0
+    "@segment/analytics-generic-utils": "file:../generic-utils"
     dset: ^3.1.4
     tslib: ^2.4.1
+    typescript: ^4.9.0
   languageName: unknown
   linkType: soft
 
@@ -4136,8 +4137,18 @@ __metadata:
   resolution: "@segment/analytics-generic-utils@workspace:packages/generic-utils"
   dependencies:
     tslib: ^2.4.1
+    typescript: ^4.9.0
   languageName: unknown
   linkType: soft
+
+"@segment/analytics-generic-utils@file:../generic-utils::locator=%40segment%2Fanalytics-core%40workspace%3Apackages%2Fcore":
+  version: 1.2.0
+  resolution: "@segment/analytics-generic-utils@file:../generic-utils#../generic-utils::hash=f3d31f&locator=%40segment%2Fanalytics-core%40workspace%3Apackages%2Fcore"
+  dependencies:
+    tslib: ^2.4.1
+  checksum: 1b868839cf9c8ff83a01c6bbe2305002b5018e0a281462b30b0a9216ae69eb45fe69f5543fc9aff41061901841beb3cbc3c58f0abd2fc9b91b05e1e4916f1d8f
+  languageName: node
+  linkType: hard
 
 "@segment/analytics-next@workspace:*, @segment/analytics-next@workspace:packages/browser":
   version: 0.0.0-use.local
@@ -4206,7 +4217,6 @@ __metadata:
     "@types/node": ^16
     axios: ^1.6.2
     buffer: ^6.0.3
-    jose: ^5.1.0
     node-fetch: ^2.6.7
     tslib: ^2.4.1
   languageName: unknown
@@ -15570,13 +15580,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jose@npm:^5.1.0":
-  version: 5.1.0
-  resolution: "jose@npm:5.1.0"
-  checksum: 62e907e953fd83f869cf4ce2e08359f5678bf99a6a4cc50faf7997b4694bc5cd32f43b79c3ff86f0e5385346b465a408166ccd1bf4237ae8c705ee82c733acc0
-  languageName: node
-  linkType: hard
-
 "jpeg-js@npm:^0.4.1, jpeg-js@npm:^0.4.3":
   version: 0.4.4
   resolution: "jpeg-js@npm:0.4.4"
@@ -22158,7 +22161,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^4.7.0":
+"typescript@npm:^4.7.0, typescript@npm:^4.9.0":
   version: 4.9.5
   resolution: "typescript@npm:4.9.5"
   bin:
@@ -22168,7 +22171,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^4.7.0#~builtin<compat/typescript>":
+"typescript@patch:typescript@^4.7.0#~builtin<compat/typescript>, typescript@patch:typescript@^4.9.0#~builtin<compat/typescript>":
   version: 4.9.5
   resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=23ec76"
   bin:

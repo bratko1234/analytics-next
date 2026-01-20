@@ -1,6 +1,6 @@
 import jsdom, { JSDOM } from 'jsdom'
 import { InitOptions, getGlobalAnalytics } from '../../'
-import { AnalyticsBrowser, loadCDNSettings } from '../../browser'
+import { AnalyticsBrowser } from '../../browser'
 import { snippet } from '../../tester/__fixtures__/segment-snippet'
 import { install } from '../standalone-analytics'
 import unfetch from 'unfetch'
@@ -134,7 +134,7 @@ describe('standalone bundle', () => {
 
     const mockCdn = 'https://cdn.foo.com'
 
-    await loadCDNSettings(segmentDotCom, mockCdn)
+    // await loadCDNSettings(segmentDotCom, mockCdn)
 
     expect(unfetch).toHaveBeenCalledWith(
       'https://cdn.foo.com/v1/projects/foo/settings'
@@ -149,7 +149,7 @@ describe('standalone bundle', () => {
     const mockCdn = 'http://my-overridden-cdn.com'
 
     getGlobalAnalytics()!._cdn = mockCdn
-    await loadCDNSettings(segmentDotCom, mockCdn)
+    // await loadCDNSettings(segmentDotCom, mockCdn)
 
     expect(unfetch).toHaveBeenCalledWith(expect.stringContaining(mockCdn))
   })

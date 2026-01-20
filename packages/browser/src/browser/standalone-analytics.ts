@@ -69,10 +69,8 @@ function getWriteKey(): string | undefined {
 }
 
 export async function install(installOptions?: InstallOptions): Promise<void> {
-  console.log('Starting install function')
   const writeKey = getWriteKey()
   console.log('Write key:', writeKey)
-
   // Merge provided options with existing options
   const existingOptions = getGlobalAnalytics()?._loadOptions ?? {}
   const options = {
@@ -84,34 +82,23 @@ export async function install(installOptions?: InstallOptions): Promise<void> {
     },
   }
 
-  console.log('Merged Options:', options)
-
   if (!writeKey) {
     console.error(
       'Failed to load Write Key. Make sure to use the latest version of the Segment snippet, which can be found in your source settings.'
     )
     return
   }
-
-  console.log('Initializing AnalyticsBrowser')
   const analytics = await AnalyticsBrowser.standalone(writeKey, options)
-  console.log('AnalyticsBrowser initialized')
 
   // Only register the custom plugin if it's enabled in options
   if (options.integrations?.['Custom Segment.io'] !== false) {
-    console.log('Registering custom plugin')
     await analytics.register(
       customSegmentio({
         writeKey: writeKey,
         apiHost: 'api.bratrax.com',
       })
     )
-    console.log('Custom Segment.io plugin registered.')
   }
-
-  console.log('Setting global analytics instance')
   setGlobalAnalytics(analytics as AnalyticsSnippet)
-
-  console.log('Setting window.analytics')
   window.analytics = analytics
 }

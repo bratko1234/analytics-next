@@ -1,6 +1,6 @@
-import { uuid } from './uuid'
-import { HTTPClient, HTTPClientRequest, HTTPResponse } from './http-client'
-import { SignJWT, importPKCS8 } from 'jose'
+import { HTTPResponse } from './http-client'
+// OAuth disabled for Bratrax - jose library removed
+// import { SignJWT, importPKCS8 } from 'jose'
 import { backoff, sleep } from '@segment/analytics-core'
 import { Emitter } from '@segment/analytics-generic-utils'
 import type {
@@ -56,21 +56,21 @@ function isHeaders(thing: unknown): thing is HTTPResponse['headers'] {
 }
 
 export interface TokenManagerSettings extends OAuthSettings {
-  httpClient: HTTPClient
+  // httpClient: HTTPClient // OAuth disabled - not needed
   maxRetries: number
 }
 
 export class TokenManager implements ITokenManager {
-  private alg = 'RS256' as const
-  private grantType = 'client_credentials' as const
-  private clientAssertionType =
-    'urn:ietf:params:oauth:client-assertion-type:jwt-bearer' as const
-  private clientId: string
-  private clientKey: string
-  private keyId: string
-  private scope: string
-  private authServer: string
-  private httpClient: HTTPClient
+  // OAuth disabled - these properties are no longer used
+  // private alg = 'RS256' as const
+  // private grantType = 'client_credentials' as const
+  // private clientAssertionType = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer' as const
+  // private clientId: string
+  // private clientKey: string
+  // private keyId: string
+  // private scope: string
+  // private authServer: string
+  // private httpClient: HTTPClient
   private maxRetries: number
   private clockSkewInSeconds = 0
 
@@ -82,12 +82,13 @@ export class TokenManager implements ITokenManager {
   private pollerTimer?: ReturnType<typeof setTimeout>
 
   constructor(props: TokenManagerSettings) {
-    this.keyId = props.keyId
-    this.clientId = props.clientId
-    this.clientKey = props.clientKey
-    this.authServer = props.authServer ?? 'https://oauth2.segment.io'
-    this.scope = props.scope ?? 'tracking_api:write'
-    this.httpClient = props.httpClient
+    // OAuth disabled - these assignments are no longer used
+    // this.keyId = props.keyId
+    // this.clientId = props.clientId
+    // this.clientKey = props.clientKey
+    // this.authServer = props.authServer ?? 'https://oauth2.segment.io'
+    // this.scope = props.scope ?? 'tracking_api:write'
+    // this.httpClient = props.httpClient
     this.maxRetries = props.maxRetries
     this.tokenEmitter.on('access_token', (event) => {
       if ('token' in event) {
@@ -248,44 +249,10 @@ export class TokenManager implements ITokenManager {
 
   /**
    * Solely responsible for building the HTTP request and calling the token service.
+   * OAuth disabled for Bratrax - jose library removed
    */
   private async requestAccessToken(): Promise<HTTPResponse> {
-    // Set issued at time to 5 seconds in the past to account for clock skew
-    const ISSUED_AT_BUFFER_IN_SECONDS = 5
-    const MAX_EXPIRY_IN_SECONDS = 60
-    // Final expiry time takes into account the issued at time, so need to subtract IAT buffer
-    const EXPIRY_IN_SECONDS =
-      MAX_EXPIRY_IN_SECONDS - ISSUED_AT_BUFFER_IN_SECONDS
-    const jti = uuid()
-    const currentUTCInSeconds =
-      Math.round(Date.now() / 1000) - this.clockSkewInSeconds
-    const jwtBody = {
-      iss: this.clientId,
-      sub: this.clientId,
-      aud: this.authServer,
-      iat: currentUTCInSeconds - ISSUED_AT_BUFFER_IN_SECONDS,
-      exp: currentUTCInSeconds + EXPIRY_IN_SECONDS,
-      jti,
-    }
-
-    const key = await importPKCS8(this.clientKey, 'RS256')
-    const signedJwt = await new SignJWT(jwtBody)
-      .setProtectedHeader({ alg: this.alg, kid: this.keyId, typ: 'JWT' })
-      .sign(key)
-
-    const requestBody = `grant_type=${this.grantType}&client_assertion_type=${this.clientAssertionType}&client_assertion=${signedJwt}&scope=${this.scope}`
-    const accessTokenEndpoint = `${this.authServer}/token`
-
-    const requestOptions: HTTPClientRequest = {
-      method: 'POST',
-      url: accessTokenEndpoint,
-      body: requestBody,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      httpRequestTimeout: 10000,
-    }
-    return this.httpClient.makeRequest(requestOptions)
+    throw new Error('OAuth is not supported in this build - jose library has been removed')
   }
 
   async getAccessToken(): Promise<AccessToken> {

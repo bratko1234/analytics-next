@@ -1,7 +1,7 @@
 import { CoreAnalytics, bindAll, pTimeout } from '@segment/analytics-core'
 import { AnalyticsSettings, validateSettings } from './settings'
 import { version } from '../generated/version'
-import { createConfiguredNodePlugin } from '../plugins/segmentio'
+import { createConfiguredBratraxPlugin } from '../plugins/custom-bratrax'
 import { NodeEventFactory } from './event-factory'
 import { Callback, dispatchAndEmit } from './dispatch-emit'
 import { NodeEmitter } from './emitter'
@@ -26,7 +26,7 @@ export class Analytics extends NodeEmitter implements CoreAnalytics {
   private _pendingEvents = 0
   private readonly _closeAndFlushDefaultTimeout: number
   private readonly _publisher: ReturnType<
-    typeof createConfiguredNodePlugin
+    typeof createConfiguredBratraxPlugin
   >['publisher']
 
   private _isFlushing = false
@@ -46,11 +46,11 @@ export class Analytics extends NodeEmitter implements CoreAnalytics {
 
     this._closeAndFlushDefaultTimeout = flushInterval * 1.25 // add arbitrary multiplier in case an event is in a plugin.
 
-    const { plugin, publisher } = createConfiguredNodePlugin(
+    const { plugin, publisher } = createConfiguredBratraxPlugin(
       {
         writeKey: settings.writeKey,
-        host: settings.host,
-        path: settings.path,
+        host: settings.host ?? 'https://api.bratrax.com',
+        path: settings.path ?? '/vidtao/batch',
         maxRetries: settings.maxRetries ?? 3,
         flushAt: settings.flushAt ?? settings.maxEventsInBatch ?? 15,
         httpRequestTimeout: settings.httpRequestTimeout,
@@ -60,7 +60,6 @@ export class Analytics extends NodeEmitter implements CoreAnalytics {
           typeof settings.httpClient === 'function'
             ? new FetchHTTPClient(settings.httpClient)
             : settings.httpClient ?? new FetchHTTPClient(),
-        oauthSettings: settings.oauthSettings,
       },
       this as NodeEmitter
     )

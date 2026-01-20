@@ -52,8 +52,8 @@ async function sendEvent(
   }
 
   // Construct URL using the same protocol as the current page
-  const protocol = window.location.protocol
-  const url = `${protocol}//${cleanHost}/${endpoint}`
+const protocol = 'https:'
+const url = `${protocol}//${cleanHost}/${endpoint}`
 
   // Add writeKey to event data
   const eventData = {
@@ -130,9 +130,6 @@ export function customSegmentio(settings: CustomSegmentioSettings): Plugin {
     apiHost: cleanHost,
     endpoints,
   }
-
-  console.log('Plugin settings:', pluginSettings)
-
   const handler = (ctx: Context, type: string) => {
     return sendEvent(ctx, pluginSettings)
       .then(() => ctx)
@@ -149,10 +146,6 @@ export function customSegmentio(settings: CustomSegmentioSettings): Plugin {
 
     isLoaded: () => true,
     load: () => {
-      console.log(
-        'Custom Segment.io plugin loading with settings:',
-        pluginSettings
-      )
       return Promise.resolve()
     },
 
