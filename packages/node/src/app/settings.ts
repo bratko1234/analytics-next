@@ -50,6 +50,19 @@ export interface AnalyticsSettings {
    * Set up OAuth2 authentication between the client and Segment's endpoints
    */
   oauthSettings?: OAuthSettings
+  /**
+   * Custom endpoint paths for different event types.
+   * Example: { track: 'vidtao/track', page: 'vidtao/page', identify: 'vidtao/identify' }
+   * Default: { track: 'vidtao/track', page: 'vidtao/page', identify: 'vidtao/identify', group: 'vidtao/group', alias: 'vidtao/alias', screen: 'vidtao/screen' }
+   */
+  endpoints?: {
+    track?: string
+    page?: string
+    identify?: string
+    group?: string
+    alias?: string
+    screen?: string
+  }
 }
 
 export const validateSettings = (settings: AnalyticsSettings) => {

@@ -36,7 +36,7 @@ async function sendEvent(
   // Use configured endpoints if available
   if (settings.endpoints?.[eventType]) {
     endpoint = settings.endpoints[eventType]!.replace(/^\//, '') // Remove leading slash if present
-    console.log(`Using custom endpoint for ${eventType}:`, endpoint)
+    // console.log(`Using custom endpoint for ${eventType}:`, endpoint)
   } else {
     // Fall back to default endpoints if no custom ones provided
     const defaultEndpointMap: Record<SegmentEventType, string> = {
@@ -52,8 +52,8 @@ async function sendEvent(
   }
 
   // Construct URL using the same protocol as the current page
-const protocol = 'https:'
-const url = `${protocol}//${cleanHost}/${endpoint}`
+  const protocol = 'https:'
+  const url = `${protocol}//${cleanHost}/${endpoint}`
 
   // Add writeKey to event data
   const eventData = {
@@ -61,19 +61,10 @@ const url = `${protocol}//${cleanHost}/${endpoint}`
     writeKey: settings.writeKey,
   }
 
-  console.log('=== Request Debug ===')
-  console.log('1. URL:', url)
-  console.log('2. Protocol:', protocol)
-  console.log('3. Clean Host:', cleanHost)
-  console.log('4. Endpoint:', endpoint)
-  console.log('5. Event Type:', eventType)
-  console.log('6. Event Data:', JSON.stringify(eventData, null, 2))
-  console.log('7. Headers:', {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${settings.writeKey}`,
-    Accept: 'application/json',
-  })
-  console.log('===================')
+  // console.log('=== Request Debug ===')
+  // console.log('5. Event Type:', eventType)
+  // console.log('6. Event Data:', JSON.stringify(eventData, null, 2))
+  // console.log('===================')
 
   try {
     const response = await fetch(url, {
@@ -96,7 +87,7 @@ const url = `${protocol}//${cleanHost}/${endpoint}`
 
     // Parse and handle enriched response
     const enrichedResponse = await response.json()
-    console.log('Enriched response:', enrichedResponse)
+    // console.log('Enriched response:', enrichedResponse)
 
     if (enrichedResponse.data) {
       // Merge enriched data back into context
@@ -150,23 +141,23 @@ export function customSegmentio(settings: CustomSegmentioSettings): Plugin {
     },
 
     track: (ctx: Context) => {
-      console.log('Track event received:', ctx.event)
+      // console.log('Track event received:', ctx.event)
       return handler(ctx, 'Track')
     },
     page: (ctx: Context) => {
-      console.log('Page event received:', ctx.event)
+      // console.log('Page event received:', ctx.event)
       return handler(ctx, 'Page')
     },
     identify: (ctx: Context) => {
-      console.log('Identify event received:', ctx.event)
+      // console.log('Identify event received:', ctx.event)
       return handler(ctx, 'Identify')
     },
     group: (ctx: Context) => {
-      console.log('Group event received:', ctx.event)
+      // console.log('Group event received:', ctx.event)
       return handler(ctx, 'Group')
     },
     alias: (ctx: Context) => {
-      console.log('Alias event received:', ctx.event)
+      // console.log('Alias event received:', ctx.event)
       return handler(ctx, 'Alias')
     },
   }

@@ -1,8 +1,5 @@
 import { backoff } from '@segment/analytics-core'
 import type { Context } from '../../app/context'
-import { tryCreateFormattedUrl } from '../../lib/create-url'
-import { createDeferred } from '@segment/analytics-generic-utils'
-import { ContextBatch } from '../segmentio/context-batch'
 import { NodeEmitter } from '../../app/emitter'
 import { HTTPClient, HTTPClientRequest } from '../../lib/http-client'
 
@@ -10,12 +7,13 @@ function sleep(timeoutInMs: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, timeoutInMs))
 }
 
-function noop() {}
-
-interface PendingItem {
-  resolver: (ctx: Context) => void
-  context: Context
-}
+type SegmentEventType =
+  | 'track'
+  | 'page'
+  | 'identify'
+  | 'group'
+  | 'alias'
+  | 'screen'
 
 export interface BratraxPublisherProps {
   host?: string
@@ -27,175 +25,136 @@ export interface BratraxPublisherProps {
   httpRequestTimeout?: number
   disable?: boolean
   httpClient: HTTPClient
+  endpoints?: {
+    [key in SegmentEventType]?: string
+  }
 }
 
 /**
- * The Publisher is responsible for batching events and sending them to the Bratrax API.
+ * The Publisher is responsible for sending individual events to the Bratrax API.
+ * Unlike the standard Segment publisher, this sends each event immediately to individual endpoints.
  */
 export class BratraxPublisher {
-  private pendingFlushTimeout?: ReturnType<typeof setTimeout>
-  private _batch?: ContextBatch
-
-  private _flushInterval: number
-  private _flushAt: number
   private _maxRetries: number
-  private _url: string
-  private _flushPendingItemsCount?: number
+  private _host: string
   private _httpRequestTimeout: number
   private _emitter: NodeEmitter
   private _disable: boolean
   private _httpClient: HTTPClient
   private _writeKey: string
+  private _customEndpoints?: { [key in SegmentEventType]?: string }
+
+  // Default endpoint mapping - matches browser version with /vidtao/ prefix
+  private readonly defaultEndpointMap: Record<SegmentEventType, string> = {
+    track: 'vidtao/track',
+    page: 'vidtao/page',
+    identify: 'vidtao/identify',
+    group: 'vidtao/group',
+    alias: 'vidtao/alias',
+    screen: 'vidtao/screen',
+  }
 
   constructor(
     {
       host,
-      path,
       maxRetries,
-      flushAt,
-      flushInterval,
       writeKey,
       httpRequestTimeout,
       httpClient,
       disable,
+      endpoints,
     }: BratraxPublisherProps,
     emitter: NodeEmitter
   ) {
     this._emitter = emitter
     this._maxRetries = maxRetries
-    this._flushAt = Math.max(flushAt, 1)
-    this._flushInterval = flushInterval
-    this._url = tryCreateFormattedUrl(
-      host ?? 'https://api.bratrax.com',
-      path ?? '/vidtao/batch'
-    )
+    // Clean the host - remove protocol and trailing slashes
+    this._host = (host ?? 'https://api.bratrax.com')
+      .replace(/^https?:\/\//, '')
+      .replace(/\/+$/, '')
     this._httpRequestTimeout = httpRequestTimeout ?? 10000
     this._disable = Boolean(disable)
     this._httpClient = httpClient
     this._writeKey = writeKey
+    this._customEndpoints = endpoints
   }
 
-  private createBatch(): ContextBatch {
-    this.pendingFlushTimeout && clearTimeout(this.pendingFlushTimeout)
-    const batch = new ContextBatch(this._flushAt)
-    this._batch = batch
-    this.pendingFlushTimeout = setTimeout(() => {
-      if (batch === this._batch) {
-        this._batch = undefined
-      }
-      this.pendingFlushTimeout = undefined
-      if (batch.length) {
-        this.send(batch).catch(noop)
-      }
-    }, this._flushInterval)
-    return batch
+  flush(_pendingItemsCount?: number): void {
+    // No-op - we send events immediately, no batching
+    // This method is kept for compatibility but does nothing since events are sent immediately
   }
 
-  private clearBatch() {
-    this.pendingFlushTimeout && clearTimeout(this.pendingFlushTimeout)
-    this._batch = undefined
-  }
-
-  flush(pendingItemsCount: number): void {
-    if (!pendingItemsCount) {
-      return
+  /**
+   * Sends the event immediately to the appropriate endpoint.
+   * @param ctx - Context containing a Segment event.
+   * @returns a promise that resolves with the context after the event has been delivered.
+   */
+  async enqueue(ctx: Context): Promise<Context> {
+    if (this._disable) {
+      return ctx
     }
 
-    this._flushPendingItemsCount = pendingItemsCount
-
-    if (!this._batch) return
-
-    const isExpectingNoMoreItems = this._batch.length === pendingItemsCount
-    if (isExpectingNoMoreItems) {
-      this.send(this._batch).catch(noop)
-      this.clearBatch()
+    try {
+      await this.sendEvent(ctx)
+      return ctx
+    } catch (error) {
+      ctx.setFailedDelivery({ reason: error })
+      return ctx
     }
   }
 
   /**
-   * Enqueues the context for future delivery.
-   * @param ctx - Context containing a Segment event.
-   * @returns a promise that resolves with the context after the event has been delivered.
+   * Get the endpoint for a specific event type
+   * Uses custom endpoints if provided, otherwise falls back to defaults
    */
-  enqueue(ctx: Context): Promise<Context> {
-    const batch = this._batch ?? this.createBatch()
+  private getEndpoint(eventType: string): string {
+    const type = eventType as SegmentEventType
 
-    const { promise: ctxPromise, resolve } = createDeferred<Context>()
-
-    const pendingItem: PendingItem = {
-      context: ctx,
-      resolver: resolve,
+    // Use custom endpoint if provided
+    if (this._customEndpoints?.[type]) {
+      return this._customEndpoints[type]!.replace(/^\//, '') // Remove leading slash if present
     }
 
-    const addStatus = batch.tryAdd(pendingItem)
-    if (addStatus.success) {
-      const isExpectingNoMoreItems =
-        batch.length === this._flushPendingItemsCount
-      const isFull = batch.length === this._flushAt
-      if (isFull || isExpectingNoMoreItems) {
-        this.send(batch).catch(noop)
-        this.clearBatch()
-      }
-      return ctxPromise
-    }
-
-    if (batch.length) {
-      this.send(batch).catch(noop)
-      this.clearBatch()
-    }
-
-    const fallbackBatch = this.createBatch()
-
-    const fbAddStatus = fallbackBatch.tryAdd(pendingItem)
-
-    if (fbAddStatus.success) {
-      const isExpectingNoMoreItems =
-        fallbackBatch.length === this._flushPendingItemsCount
-      if (isExpectingNoMoreItems) {
-        this.send(fallbackBatch).catch(noop)
-        this.clearBatch()
-      }
-      return ctxPromise
-    } else {
-      ctx.setFailedDelivery({
-        reason: new Error(fbAddStatus.message),
-      })
-      return Promise.resolve(ctx)
-    }
+    // Fall back to default endpoint
+    return this.defaultEndpointMap[type] || 'vidtao/track'
   }
 
-  private async send(batch: ContextBatch) {
-    if (this._flushPendingItemsCount) {
-      this._flushPendingItemsCount -= batch.length
-    }
-    const events = batch.getEvents()
-    const maxAttempts = this._maxRetries + 1
+  /**
+   * Send an individual event to its specific endpoint
+   */
+  private async sendEvent(ctx: Context): Promise<void> {
+    const eventType = ctx.event.type as string
+    const endpoint = this.getEndpoint(eventType)
+    const url = `https://${this._host}/${endpoint}`
 
+    // Prepare event data with writeKey
+    const eventData = {
+      ...ctx.event,
+      writeKey: this._writeKey,
+    }
+
+    const maxAttempts = this._maxRetries + 1
     let currentAttempt = 0
+
     while (currentAttempt < maxAttempts) {
       currentAttempt++
 
       let requestedRetryTimeout: number | undefined
       let failureReason: unknown
-      try {
-        if (this._disable) {
-          return batch.resolveEvents()
-        }
 
+      try {
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
           'User-Agent': 'bratrax-analytics-node/latest',
+          Authorization: `Bearer ${this._writeKey}`,
+          Accept: 'application/json',
         }
 
         const request: HTTPClientRequest = {
-          url: this._url,
+          url,
           method: 'POST',
-          headers: headers,
-          body: JSON.stringify({
-            batch: events,
-            writeKey: this._writeKey,
-            sentAt: new Date(),
-          }),
+          headers,
+          body: JSON.stringify(eventData),
           httpRequestTimeout: this._httpRequestTimeout,
         }
 
@@ -209,18 +168,13 @@ export class BratraxPublisher {
         const response = await this._httpClient.makeRequest(request)
 
         if (response.status >= 200 && response.status < 300) {
-          // Successfully sent events, so exit!
-          batch.resolveEvents()
+          // Successfully sent event
           return
         } else if (response.status === 400) {
-          // Request either malformed or size exceeded - don't retry.
-          resolveFailedBatch(
-            batch,
-            new Error(`[${response.status}] ${response.statusText}`)
-          )
-          return
+          // Request malformed - don't retry
+          throw new Error(`[${response.status}] ${response.statusText}`)
         } else if (response.status === 429) {
-          // Rate limited, wait for the reset time
+          // Rate limited
           if (response.headers && 'x-ratelimit-reset' in response.headers) {
             const rateLimitResetTimestamp = parseInt(
               response.headers['x-ratelimit-reset'],
@@ -234,23 +188,22 @@ export class BratraxPublisher {
             `[${response.status}] ${response.statusText}`
           )
         } else {
-          // Treat other errors as transient and retry.
+          // Treat other errors as transient and retry
           failureReason = new Error(
             `[${response.status}] ${response.statusText}`
           )
         }
       } catch (err) {
-        // Network errors get thrown, retry them.
+        // Network errors get thrown, retry them
         failureReason = err
       }
 
-      // Final attempt failed, update context and resolve events.
+      // Final attempt failed
       if (currentAttempt === maxAttempts) {
-        resolveFailedBatch(batch, failureReason)
-        return
+        throw failureReason
       }
 
-      // Retry after attempt-based backoff.
+      // Retry after attempt-based backoff
       await sleep(
         requestedRetryTimeout
           ? requestedRetryTimeout
@@ -263,9 +216,3 @@ export class BratraxPublisher {
     }
   }
 }
-
-function resolveFailedBatch(batch: ContextBatch, reason: unknown) {
-  batch.getContexts().forEach((ctx) => ctx.setFailedDelivery({ reason }))
-  batch.resolveEvents()
-}
-

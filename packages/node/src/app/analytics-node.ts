@@ -60,6 +60,7 @@ export class Analytics extends NodeEmitter implements CoreAnalytics {
           typeof settings.httpClient === 'function'
             ? new FetchHTTPClient(settings.httpClient)
             : settings.httpClient ?? new FetchHTTPClient(),
+        endpoints: settings.endpoints,
       },
       this as NodeEmitter
     )

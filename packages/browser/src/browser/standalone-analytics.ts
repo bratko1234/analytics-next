@@ -70,7 +70,7 @@ function getWriteKey(): string | undefined {
 
 export async function install(installOptions?: InstallOptions): Promise<void> {
   const writeKey = getWriteKey()
-  console.log('Write key:', writeKey)
+  // console.log('Write key:', writeKey)
   // Merge provided options with existing options
   const existingOptions = getGlobalAnalytics()?._loadOptions ?? {}
   const options = {

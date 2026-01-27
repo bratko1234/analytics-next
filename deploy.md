@@ -50,6 +50,16 @@ You should see `standalone.js` (~112 KB)
 
 ## 📦 Deploy Node Package (Backend SDK)
 
+**ℹ️ Important**: The Node.js SDK sends events individually to separate endpoints (same as browser):
+- `https://api.bratrax.com/vidtao/track` → track events
+- `https://api.bratrax.com/vidtao/page` → page events
+- `https://api.bratrax.com/vidtao/identify` → identify events
+- `https://api.bratrax.com/vidtao/group` → group events
+- `https://api.bratrax.com/vidtao/alias` → alias events
+- `https://api.bratrax.com/vidtao/screen` → screen events
+
+Each event is sent immediately (no batching). You can customize these endpoints during initialization.
+
 ### Step 1: Make Your Code Changes
 Edit files in `packages/node/src/` as needed.
 
@@ -126,6 +136,65 @@ Should show your new version.
 ```powershell
 # In a separate test directory
 npm install bratrax-analytics-node
+```
+
+### Step 9: Usage Example
+
+**Basic usage (uses default endpoints):**
+```javascript
+const { Analytics } = require('bratrax-analytics-node')
+
+// Default configuration - uses /vidtao/* endpoints
+const analytics = new Analytics({
+  writeKey: 'YOUR_WRITE_KEY'
+})
+
+// Track event - sends to https://api.bratrax.com/vidtao/track
+analytics.track({
+  userId: '123',
+  event: 'Video Created',
+  properties: {
+    videoId: 'vid_123',
+    duration: 30
+  }
+})
+
+// Identify user - sends to https://api.bratrax.com/vidtao/identify
+analytics.identify({
+  userId: '123',
+  traits: {
+    email: 'user@example.com',
+    plan: 'premium'
+  }
+})
+
+// Page view - sends to https://api.bratrax.com/vidtao/page
+analytics.page({
+  userId: '123',
+  name: 'Dashboard',
+  properties: {
+    path: '/dashboard'
+  }
+})
+```
+
+**Advanced usage (custom endpoints):**
+```javascript
+const { Analytics } = require('bratrax-analytics-node')
+
+// Custom endpoint configuration
+const analytics = new Analytics({
+  writeKey: 'YOUR_WRITE_KEY',
+  host: 'api.bratrax.com', // optional - defaults to api.bratrax.com
+  endpoints: {
+    track: 'custom/track',      // optional - override specific endpoints
+    page: 'custom/page',
+    identify: 'custom/identify',
+    group: 'custom/group',
+    alias: 'custom/alias',
+    screen: 'custom/screen'
+  }
+})
 ```
 
 ✅ **Node package deployed!**

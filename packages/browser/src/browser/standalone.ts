@@ -130,7 +130,6 @@ async function modifiedInstall() {
       throw new Error('Analytics not initialized properly')
     }
 
-
     // Register the plugin only once
     if (
       typeof analytics.register === 'function' &&
@@ -149,7 +148,7 @@ async function modifiedInstall() {
     if (typeof window !== 'undefined') {
       window.analytics = analytics
       window.AnalyticsNext = analytics
-      console.log('Window analytics object updated')
+      // console.log('Window analytics object updated')
     }
 
     return analytics
